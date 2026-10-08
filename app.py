@@ -2,11 +2,7 @@ import streamlit as st
 import pandas as pd
 
 # Cấu hình giao diện web
-st.set_page_config(
-    page_title="Phần Mềm Quản Lý Gia Phả Họ Đào Phúc",
-    page_icon="🌳",
-    layout="wide"
-)
+st.set_page_config(page_title="Phần Mềm Quản Lý Gia Phả Họ Đào Phúc", page_icon="🌳", layout="wide")
 
 st.title("🌳 PHẦN MỀM QUẢN LÝ GIA PHẢ HỌ ĐÀO PHÚC")
 st.markdown("Hệ thống quản lý trực tuyến dòng họ (Hưng Nông – Hùng Tiến – Mỹ Đức – Hà Nội)")
@@ -22,7 +18,7 @@ def load_data():
         df.columns = [str(c).strip() for c in df.columns]
         
         string_cols = [
-            "Mã thành viên (ID)", "Họ và tên", "Giới tính", "Chi", 
+            "Mã thành viên (ID)", "Họ và Tên", "Giới tính", "Chi", 
             "Đời", "Mã Cha/Mẹ (Parent ID)", "Tên Cha / Mẹ", 
             "Phu nhân / Phu quân", "Thứ tự / Vai trò", "Ghi chú"
         ]
@@ -59,7 +55,7 @@ if not df.empty:
     filtered_df = df.copy()
     if search_keyword:
         filtered_df = filtered_df[
-            filtered_df["Họ và tên"].str.lower().str.contains(search_keyword.lower()) |
+            filtered_df["Họ và Tên"].str.lower().str.contains(search_keyword.lower()) |
             filtered_df["Mã thành viên (ID)"].str.lower().str.contains(search_keyword.lower())
         ]
     if selected_chi != "Tất cả" and "Chi" in df.columns:
@@ -76,15 +72,14 @@ if not df.empty:
     # --- TÍNH NĂNG XEM CÂY GIA PHẢ (FAMILY TREE) CỦA THÀNH VIÊN ---
     st.subheader("🌲 Xem Sơ Đồ Cây Gia Phả (Family Tree) Của Thành Viên")
     
-    # Tạo danh sách chọn thành viên để xem cây
-    member_options = df["Mã thành viên (ID)"].astype(str) + " - " + df["Họ và tên"]
+    member_options = df["Mã thành viên (ID)"].astype(str) + " - " + df["Họ và Tên"]
     selected_member_str = st.selectbox("Chọn hoặc tìm tên thành viên để xem nhánh gia phả:", member_options)
     
     if selected_member_str:
         selected_id = selected_member_str.split(" - ")[0]
         current_member = df[df["Mã thành viên (ID)"] == selected_id].iloc[0]
         
-        st.markdown(f"### 👤 Thông tin chi tiết: **{current_member['Họ và tên']}** ({current_member['Mã thành viên (ID)']})")
+        st.markdown(f"### 👤 Thông tin chi tiết: **{current_member['Họ và Tên']}** ({current_member['Mã thành viên (ID)']})")
         
         col_t1, col_t2, col_t3 = st.columns(3)
         with col_t1:
@@ -99,25 +94,22 @@ if not df.empty:
             
         st.markdown("#### 🌿 Nhánh gia phả liên quan (Tổ tiên & Con cháu):")
         
-        # 1. Tìm Cha/Mẹ (Tổ tiên trực hệ phía trên)
         parent_id = current_member['Mã Cha/Mẹ (Parent ID)']
         parent_info = df[df["Mã thành viên (ID)"] == parent_id] if parent_id else pd.DataFrame()
         
-        # 2. Tìm anh chị em cùng cha/mẹ
         siblings = pd.DataFrame()
         if parent_id:
             siblings = df[(df["Mã Cha/Mẹ (Parent ID)"] == parent_id) & (df["Mã thành viên (ID)"] != selected_id)]
             
-        # 3. Tìm con cháu (Thế hệ tiếp theo phía dưới)
         children = df[df["Mã Cha/Mẹ (Parent ID)"] == selected_id]
         
         tree_col1, tree_col2, tree_col3 = st.columns(3)
         
         with tree_col1:
-            st.markdown("⬆️ **Cha / Mẹ (Thân phụ/Thân mẫu):**")
+            st.markdown("⬆️ **Cha / Mẹ:**")
             if not parent_info.empty:
                 p = parent_info.iloc[0]
-                st.code(f"[{p['Mã thành viên (ID)']}] {p['Họ và tên']} ({p['Đời']})")
+                st.code(f"[{p['Mã thành viên (ID)']}] {p['Họ và Tên']} ({p['Đời']})")
             else:
                 st.caption("Không có thông tin hoặc là Thủy tổ.")
                 
@@ -125,7 +117,7 @@ if not df.empty:
             st.markdown("↔️ **Anh / Chị / Em ruột:**")
             if not siblings.empty:
                 for _, s in siblings.iterrows():
-                    st.text(f"• [{s['Mã thành viên (ID)']}] {s['Họ và tên']} ({s['Thứ tự / Vai trò']})")
+                    st.text(f"• [{s['Mã thành viên (ID)']}] {s['Họ và Tên']} ({s['Thứ tự / Vai trò']})")
             else:
                 st.caption("Không có hoặc chưa cập nhật.")
                 
@@ -133,7 +125,7 @@ if not df.empty:
             st.markdown("⬇️ **Con cháu trực hệ:**")
             if not children.empty:
                 for _, c in children.iterrows():
-                    st.success(f"[{c['Mã thành viên (ID)']}] {c['Họ và tên']} ({c['Thứ tự / Vai trò']})")
+                    st.success(f"[{c['Mã thành viên (ID)']}] {c['Họ và Tên']} ({c['Thứ tự / Vai trò']})")
             else:
                 st.caption("Chưa có thông tin con cháu.")
 
@@ -147,13 +139,13 @@ if not df.empty:
         with st.form("add_form"):
             c1, c2, c3 = st.columns(3)
             with c1:
-                new_id = st.text_input("Mã thành viên (ID) mới", value="GP-14-001", help="Mã định danh duy nhất")
+                new_id = st.text_input("Mã thành viên (ID) mới", value="GP-14-001")
                 new_name = st.text_input("Họ và Tên")
                 new_gender = st.selectbox("Giới tính", ["Nam", "Nữ"])
             with c2:
                 new_chi = st.selectbox("Chi", ["Chi Giáp", "Chi Ất", "Chi Bính", "Chi Đinh", "Chi Mậu", "Tổ dòng"])
                 new_doi = st.text_input("Đời", value="Đời thứ 14")
-                new_parent_id = st.text_input("Mã Cha/Mẹ (Parent ID)", value="GP-13-001", help="Nhập Mã ID của cha hoặc mẹ")
+                new_parent_id = st.text_input("Mã Cha/Mẹ (Parent ID)", value="GP-13-001")
             with c3:
                 new_parent_name = st.text_input("Tên Cha / Mẹ", value="Đào Đức Huy")
                 new_spouse = st.text_input("Phu nhân / Phu quân", value="-")
@@ -164,11 +156,11 @@ if not df.empty:
             if st.form_submit_button("Lưu thành viên mới"):
                 if new_id and new_name:
                     if new_id in df["Mã thành viên (ID)"].values:
-                        st.error(f"Mã thành viên '{new_id}' đã tồn tại! Vui lòng chọn mã khác.")
+                        st.error(f"Mã thành viên '{new_id}' đã tồn tại!")
                     else:
                         new_row = {
                             "Mã thành viên (ID)": new_id,
-                            "Họ và tên": new_name,
+                            "Họ và Tên": new_name,
                             "Giới tính": new_gender,
                             "Chi": new_chi,
                             "Đời": new_doi,
@@ -183,7 +175,7 @@ if not df.empty:
                         st.success(f"Đã thêm thành công thành viên: {new_name}!")
                         st.rerun()
                 else:
-                    st.error("Vui lòng điền đủ Mã thành viên và Họ tên!")
+                    st.error("Vui lòng điền đủ Mã thành viên và Họ và Tên!")
                     
     with tab2:
         st.subheader("Chỉnh sửa thông tin thành viên hiện có")
@@ -194,14 +186,15 @@ if not df.empty:
             with st.form("edit_form"):
                 ec1, ec2 = st.columns(2)
                 with ec1:
-                    e_name = st.text_input("Họ và Tên", value=member["Họ và tên"])
+                    e_name = st.text_input("Họ và Tên", value=member["Họ and tên"] if "Họ and tên" in member else member["Họ và Tên"])
                     e_spouse = st.text_input("Phu nhân / Phu quân", value=member["Phu nhân / Phu quân"])
                 with ec2:
                     e_role = st.text_input("Thứ tự / Vai trò", value=member["Thứ tự / Vai trò"])
                     e_note = st.text_area("Ghi chú", value=member["Ghi chú"])
                 
                 if st.form_submit_button("Cập nhật thay đổi"):
-                    df.loc[df["Mã thành viên (ID)"] == edit_id, "Họ và tên"] = e_name
+                    target_name_col = "Họ and tên" if "Họ and tên" in df.columns else "Họ và Tên"
+                    df.loc[df["Mã thành viên (ID)"] == edit_id, target_name_col] = e_name
                     df.loc[df["Mã thành viên (ID)"] == edit_id, "Phu nhân / Phu quân"] = e_spouse
                     df.loc[df["Mã thành viên (ID)"] == edit_id, "Thứ tự / Vai trò"] = e_role
                     df.loc[df["Mã thành viên (ID)"] == edit_id, "Ghi chú"] = e_note
