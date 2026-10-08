@@ -14,7 +14,10 @@ EXCEL_FILE = "Gia_Pha_Ho_Dao_Phuc_Excel_Chuan.xlsx"
 def load_data():
     try:
         df = pd.read_excel(EXCEL_FILE)
+        # Chuẩn hóa tên cột: loại bỏ khoảng trắng thừa để tránh lỗi KeyError
         df.columns = [str(c).strip() for c in df.columns]
+        
+        # Các cột dạng chuỗi cần xử lý
         string_cols = ["Mã thành viên (ID)", "Họ và tên", "Giới tính", "Chi", "Đời", "Mã Cha/Mẹ (Parent ID)", "Tên Cha / Mẹ", "Phu nhân / Phu quân", "Thứ tự / Vai trò", "Ghi chú"]
         for col in string_cols:
             if col in df.columns:
@@ -31,11 +34,19 @@ if not df.empty:
     st.sidebar.header("🔍 Tra cứu & Lọc danh sách")
     search_keyword = st.sidebar.text_input("Tìm theo tên hoặc mã ID", "")
     
-    chi_options = ["Tất cả"] + sorted(df["Chi"].unique().tolist())
-    selected_chi = st.sidebar.selectbox("Lọc theo Chi", chi_options)
-    
-    doi_options = ["Tất cả"] + sorted(df["Đời"].unique().tolist())
-    selected_doi = st.sidebar.selectbox("Lọc theo Đời", doi_options)
+    # Kiểm tra cột Chi an toàn
+    if "Chi" in df.columns:
+        chi_options = ["Tất cả"] + sorted([str(x) for x in df["Chi"].unique() if x != ""])
+        selected_chi = st.sidebar.selectbox("Lọc theo Chi", chi_options)
+    else:
+        selected_chi = "Tất cả"
+        
+    # Kiểm tra cột Đời an toàn
+    if "Đời" in df.columns:
+        doi_options = ["Tất cả"] + sorted([str(x) for x in df["Đời"].unique() if x != ""])
+        selected_doi = st.sidebar.selectbox("Lọc theo Đời", doi_options)
+    else:
+        selected_doi = "Tất cả"
     
     # Áp dụng bộ lọc
     filtered_df = df.copy()
@@ -44,9 +55,9 @@ if not df.empty:
             filtered_df["Họ và tên"].str.lower().str.contains(search_keyword.lower()) |
             filtered_df["Mã thành viên (ID)"].str.lower().str.contains(search_keyword.lower())
         ]
-    if selected_chi != "Tất cả":
+    if selected_chi != "Tất cả" and "Chi" in df.columns:
         filtered_df = filtered_df[filtered_df["Chi"] == selected_chi]
-    if selected_doi != "Tất cả":
+    if selected_doi != "Tất cả" and "Đời" in df.columns:
         filtered_df = filtered_df[filtered_df["Đời"] == selected_doi]
     
     # --- HIỂN THỊ DANH SÁCH THÀNH VIÊN ---
