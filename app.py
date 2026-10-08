@@ -2,7 +2,11 @@ import streamlit as st
 import pandas as pd
 
 # Cấu hình giao diện web
-st.set_page_config(page_title="Phần Mềm Quản Lý Gia Phả Họ Đào Phúc", page_icon="🌳", layout="wide")
+st.set_page_config(
+    page_title="Phần Mềm Quản Lý Gia Phả Họ Đào Phúc",
+    page_icon="🌳",
+    layout="wide"
+)
 
 st.title("🌳 PHẦN MỀM QUẢN LÝ GIA PHẢ HỌ ĐÀO PHÚC")
 st.markdown("Hệ thống quản lý trực tuyến dòng họ (Hưng Nông – Hùng Tiến – Mỹ Đức – Hà Nội)")
@@ -14,10 +18,14 @@ EXCEL_FILE = "Gia_Pha_Ho_Dao_Phuc_Excel_Chuan.xlsx"
 def load_data():
     try:
         df = pd.read_excel(EXCEL_FILE)
-        # Chuẩn hóa toàn bộ tên cột để tránh lỗi khoảng trắng
+        # Chuẩn hóa tên cột: loại bỏ khoảng trắng thừa để tránh lỗi KeyError
         df.columns = [str(c).strip() for c in df.columns]
         
-        string_cols = ["Mã thành viên (ID)", "Họ và tên", "Giới tính", "Chi", "Đời", "Mã Cha/Mẹ (Parent ID)", "Tên Cha / Mẹ", "Phu nhân / Phu quân", "Thứ tự / Vai trò", "Ghi chú"]
+        string_cols = [
+            "Mã thành viên (ID)", "Họ và tên", "Giới tính", "Chi", 
+            "Đời", "Mã Cha/Mẹ (Parent ID)", "Tên Cha / Mẹ", 
+            "Phu nhân / Phu quân", "Thứ tự / Vai trò", "Ghi chú"
+        ]
         for col in string_cols:
             if col in df.columns:
                 df[col] = df[col].fillna("").astype(str).replace("nan", "")
@@ -33,14 +41,14 @@ if not df.empty:
     st.sidebar.header("🔍 Tra cứu & Lọc danh sách")
     search_keyword = st.sidebar.text_input("Tìm theo tên hoặc mã ID", "")
     
-    # Lọc Chi an toàn
+    # Kiểm tra cột Chi an toàn
     if "Chi" in df.columns:
         chi_options = ["Tất cả"] + sorted([str(x) for x in df["Chi"].unique() if x != ""])
         selected_chi = st.sidebar.selectbox("Lọc theo Chi", chi_options)
     else:
         selected_chi = "Tất cả"
         
-    # Lọc Đời an toàn
+    # Kiểm tra cột Đời an toàn
     if "Đời" in df.columns:
         doi_options = ["Tất cả"] + sorted([str(x) for x in df["Đời"].unique() if x != ""])
         selected_doi = st.sidebar.selectbox("Lọc theo Đời", doi_options)
@@ -61,8 +69,74 @@ if not df.empty:
     
     # --- HIỂN THỊ DANH SÁCH THÀNH VIÊN ---
     st.subheader(f"📋 Danh sách thành viên (Hiển thị: {len(filtered_df)} / Tổng số: {len(df)} thành viên)")
-    st.dataframe(filtered_df, use_container_width=True, height=450)
+    st.dataframe(filtered_df, use_container_width=True, height=350)
     
+    st.markdown("---")
+    
+    # --- TÍNH NĂNG XEM CÂY GIA PHẢ (FAMILY TREE) CỦA THÀNH VIÊN ---
+    st.subheader("🌲 Xem Sơ Đồ Cây Gia Phả (Family Tree) Của Thành Viên")
+    
+    # Tạo danh sách chọn thành viên để xem cây
+    member_options = df["Mã thành viên (ID)"].astype(str) + " - " + df["Họ và tên"]
+    selected_member_str = st.selectbox("Chọn hoặc tìm tên thành viên để xem nhánh gia phả:", member_options)
+    
+    if selected_member_str:
+        selected_id = selected_member_str.split(" - ")[0]
+        current_member = df[df["Mã thành viên (ID)"] == selected_id].iloc[0]
+        
+        st.markdown(f"### 👤 Thông tin chi tiết: **{current_member['Họ và tên']}** ({current_member['Mã thành viên (ID)']})")
+        
+        col_t1, col_t2, col_t3 = st.columns(3)
+        with col_t1:
+            st.info(f"**Chi:** {current_member['Chi']}\n\n**Đời:** {current_member['Đời']}")
+        with col_t2:
+            st.success(f"**Cha / Mẹ:** {current_member['Tên Cha / Mẹ']} (Mã: {current_member['Mã Cha/Mẹ (Parent ID)']})")
+        with col_t3:
+            st.warning(f"**Phu nhân / Phu quân:** {current_member['Phu nhân / Phu quân']}\n\n**Vai trò:** {current_member['Thứ tự / Vai trò']}")
+        
+        if current_member['Ghi chú']:
+            st.write(f"📝 **Ghi chú:** {current_member['Ghi chú']}")
+            
+        st.markdown("#### 🌿 Nhánh gia phả liên quan (Tổ tiên & Con cháu):")
+        
+        # 1. Tìm Cha/Mẹ (Tổ tiên trực hệ phía trên)
+        parent_id = current_member['Mã Cha/Mẹ (Parent ID)']
+        parent_info = df[df["Mã thành viên (ID)"] == parent_id] if parent_id else pd.DataFrame()
+        
+        # 2. Tìm anh chị em cùng cha/mẹ
+        siblings = pd.DataFrame()
+        if parent_id:
+            siblings = df[(df["Mã Cha/Mẹ (Parent ID)"] == parent_id) & (df["Mã thành viên (ID)"] != selected_id)]
+            
+        # 3. Tìm con cháu (Thế hệ tiếp theo phía dưới)
+        children = df[df["Mã Cha/Mẹ (Parent ID)"] == selected_id]
+        
+        tree_col1, tree_col2, tree_col3 = st.columns(3)
+        
+        with tree_col1:
+            st.markdown("⬆️ **Cha / Mẹ (Thân phụ/Thân mẫu):**")
+            if not parent_info.empty:
+                p = parent_info.iloc[0]
+                st.code(f"[{p['Mã thành viên (ID)']}] {p['Họ và tên']} ({p['Đời']})")
+            else:
+                st.caption("Không có thông tin hoặc là Thủy tổ.")
+                
+        with tree_col2:
+            st.markdown("↔️ **Anh / Chị / Em ruột:**")
+            if not siblings.empty:
+                for _, s in siblings.iterrows():
+                    st.text(f"• [{s['Mã thành viên (ID)']}] {s['Họ và tên']} ({s['Thứ tự / Vai trò']})")
+            else:
+                st.caption("Không có hoặc chưa cập nhật.")
+                
+        with tree_col3:
+            st.markdown("⬇️ **Con cháu trực hệ:**")
+            if not children.empty:
+                for _, c in children.iterrows():
+                    st.success(f"[{c['Mã thành viên (ID)']}] {c['Họ và tên']} ({c['Thứ tự / Vai trò']})")
+            else:
+                st.caption("Chưa có thông tin con cháu.")
+
     st.markdown("---")
     
     # --- CHỨC NĂNG THÊM & SỬA THÀNH VIÊN ---
